@@ -1,0 +1,34 @@
+{
+  "name": "hot-config",
+  "version": "0.1.0",
+  "description": "A config loader supports reload configs on the fly (hot-reload).",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "mocha --recursive tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thenewvu/hot-config.git"
+  },
+  "keywords": [
+    "hot-reload",
+    "hot-update",
+    "reload",
+    "update",
+    "config",
+    "loader",
+    "config-loader"
+  ],
+  "author": "Vu Le <thenewvu@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/thenewvu/hot-config/issues"
+  },
+  "homepage": "https://github.com/thenewvu/hot-config#readme",
+  "dependencies": {
+    "debug": "^2.2.0",
+    "find": "^0.2.7",
+    "lodash": "^4.16.2",
+    "neo-async": "^2.0.1"
+  }
+}
