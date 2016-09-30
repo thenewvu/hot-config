@@ -1,7 +1,7 @@
 {
   "name": "hot-config",
   "version": "0.1.0",
-  "description": "A config loader supports reload configs on the fly (hot-reload).",
+  "description": "A config loader is designed to reload on the fly (hot-reload)",
   "main": "src/index.js",
   "scripts": {
     "test": "mocha --recursive tests"
@@ -28,7 +28,13 @@
   "dependencies": {
     "debug": "^2.2.0",
     "find": "^0.2.7",
+    "js-yaml": "^3.6.1",
     "lodash": "^4.16.2",
     "neo-async": "^2.0.1"
+  },
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "decache": "^4.1.0",
+    "mocha": "^3.1.0"
   }
 }
