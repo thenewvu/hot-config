@@ -2,6 +2,7 @@
 
 const fs    = require('fs');
 const path  = require('path');
+const util  = require('util');
 const _     = require('lodash');
 const find  = require('find');
 const async = require('neo-async');
@@ -32,9 +33,12 @@ const parsers = {
 // default optional options
 const defopts = {
   pattern: /^.*\.(yaml|yml)$/,
-  parser: parsers.yaml,
   encoding: 'utf8',
-  defenv: 'default'
+  parser: parsers.yaml,
+  defenv: 'default',
+  __listdir: find.file,
+  __readfile: fs.readFile,
+  __env: process.env.NODE_ENV
 };
 
 // config store
@@ -44,8 +48,10 @@ const store = {};
  * Clear config store.
  */
 function clear() {
-  warn('Clearing config store');
-  _.unset(store, _.keys(store));
+  warn('Clearing config store, %j', store);
+  _.keys(store).forEach((key) => {
+    delete store[key];
+  });
 }
 
 /**
@@ -65,24 +71,32 @@ function load(dir, opts, done) {
   // merge opts
   opts = _.defaults({}, opts, defopts);
 
+  log('Loading with opts %j', util.inspect(opts, {depth: null}));
+
   const findFiles = (next) => {
     log('Finding "%s"', opts.pattern);
-    find(opts.pattern, dir, next);
+    opts.__listdir(opts.pattern, dir, (files) => {
+      next(null, files);
+    });
   };
 
-  const loadConfigs = (files, next) => {
+  const parseFiles = (files, next) => {
+    log('Found ', files);
+
     if (_.isEmpty(files)) {
       warn('Not found any config files');
       return next(null, []);
     }
 
-    log('Found ', files);
-
-    const parsePath = (file, next) => next(null, path.relative(dir, file)
-      .split(path.sep).filter((n) => !!n).join('.'));
+    const parsePath = (file, next) => {
+      file = path.relative(dir, file);
+      file = file.replace(path.extname(file), '');
+      file = file.split(path.sep).filter((n) => !!n).join('.');
+      next(null, file);
+    };
     const parseFile = (file, next) => async.waterfall([
-      (next) => fs.readfile(file, opts.encoding, next),
-      (data, next) => opts.loader(data, next)
+      (next) => opts.__readfile(file, opts.encoding, next),
+      (data, next) => opts.parser(data, next)
     ], next);
     const parse = (file, next) => async.parallel({
       path: (next) => parsePath(file, next),
@@ -91,20 +105,25 @@ function load(dir, opts, done) {
     async.map(files, parse, next);
   };
 
-  const mergeConfigs = (configs, next) => {
-    const merge = (config, next) => next(null, _.assign(config, {
-      value: _.merge({}, config.value[opts.defenv], config.value[process.env.NODE_ENV])
-    }));
-    async.map(configs, merge, next);
+  const solveEnv = (configs, next) => {
+    log('Solving env "%s" of %j', opts.__env, configs);
+    const solve = (config) => _.assign(config, {
+      value: _.merge({}, config.value[opts.defenv], config.value[opts.__env])
+    });
+    next(null, _.map(configs, solve));
   };
 
-  const updateConfigs = (configs, next) => {
+  const updateStore = (configs, next) => {
     clear();
-    configs.forEach((config) => _.set(config.path, config.value));
+    configs.forEach((config) => {
+      _.set(store, config.path, config.value);
+    });
+    log('Updated store, %j', store);
+    next(null);
   };
 
   // execute subtasks
-  async.waterfall([findFiles, loadConfigs, mergeConfigs, updateConfigs], done);
+  async.waterfall([findFiles, parseFiles, solveEnv, updateStore], done);
 }
 
-module.exports =  {store, clear, load};
+module.exports =  {parsers, store, clear, load};

@@ -1,0 +1,3 @@
+default:
+  arr: ['e1', 'e2']
+  flt: 15.235
