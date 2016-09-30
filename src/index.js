@@ -35,6 +35,7 @@ const defopts = {
   pattern: /^.*\.(yaml|yml)$/,
   encoding: 'utf8',
   parser: parsers.yaml,
+  pathProcessor: _.camelCase,
   defenv: 'default',
   __listdir: find.file,
   __readfile: fs.readFile,
@@ -90,8 +91,8 @@ function load(dir, opts, done) {
 
     const parsePath = (file, next) => {
       file = path.relative(dir, file);
-      file = file.replace(path.extname(file), '');
-      file = file.split(path.sep).filter((n) => !!n).join('.');
+      file = file.replace(path.extname(file), '').split(path.sep)
+        .filter((n) => !!n).map((n) => opts.pathProcessor(n)).join('.');
       next(null, file);
     };
     const parseFile = (file, next) => async.waterfall([

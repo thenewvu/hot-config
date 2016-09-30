@@ -53,7 +53,7 @@ describe('features', function() {
       expect(err).to.be.null;
       expect(config.store).to.deep.equal({
         conf1: {
-          conf1_1: {
+          conf11: {
             str: 'a string',
             num: 12
           }
@@ -98,6 +98,29 @@ describe('features', function() {
       });
     });
 
+  });
+
+  it('process config paths', function(done) {
+    decache('../src/index');
+    const config = require('../src/index');
+    config.load(`${__dirname}/features/process-config-paths`, (err) => {
+      expect(err).to.be.null;
+      expect(config.store).to.deep.equal({
+        pathWithDashes: {
+          conf1: {
+            str: 'a string',
+            num: 12
+          }
+        },
+        pathWithUnderscores: {
+          conf2: {
+            arr: ['e1', 'e2'],
+            flt: 15.235
+          }
+        }
+      });
+      done();
+    });
   });
 
 });

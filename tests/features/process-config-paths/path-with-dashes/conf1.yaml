@@ -1,0 +1,3 @@
+default:
+  str: 'a string'
+  num: 12
