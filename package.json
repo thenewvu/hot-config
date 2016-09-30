@@ -11,13 +11,12 @@
     "url": "git+https://github.com/thenewvu/hot-config.git"
   },
   "keywords": [
-    "hot-reload",
-    "hot-update",
-    "reload",
-    "update",
     "config",
-    "loader",
-    "config-loader"
+    "configure",
+    "config-files",
+    "config-loader",
+    "reload-config",
+    "hot-reload-config"
   ],
   "author": "Vu Le <thenewvu@gmail.com>",
   "license": "MIT",
