@@ -115,8 +115,8 @@ Built-in parsers. Currently, there're 2 built-in parsers, `yaml` and `json`.
 A Error-based class provides information of a parser error.
 
 ```javascript
-class ParserError ext ends Error {
-  constructor (error, f ile) {
+class ParserError extends Error {
+  constructor (error, file) {
     super(`${error.toString()} in "${file}"`)
   }
 }
