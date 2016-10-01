@@ -1,7 +1,7 @@
 {
   "name": "hot-config",
-  "version": "0.1.0",
-  "description": "A config loader is designed to reload on the fly (hot-reload)",
+  "version": "1.0.0",
+  "description": "A config loader is designed to be able to hot-reload",
   "main": "src/index.js",
   "scripts": {
     "test": "mocha tests"
