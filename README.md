@@ -133,8 +133,8 @@ The key of hot-reloading is the only config store instance.
 
 Take a look at:
 
-* [clear()](src/index.js#L95)
-* [load::updateStore()](src/index.js#L168)
+* [clear()](src/index.js#L90)
+* [load::updateStore()](src/index.js#L173)
 
 After all config files are parsed and merged, the config store will be cleared and updated synchronously but not replaced by a new instance, this makes all existing references of the config store are still working after reloaded.
 
