@@ -1,14 +1,15 @@
-'use strict';
+/* eslint-env mocha */
+'use strict'
 
-const expect = require('chai').expect;
-const decache = require('decache');
+const expect = require('chai').expect
+const decache = require('decache')
 
-describe('features', function() {
-  it('load yaml config files by default', function(done) {
-    decache('../src/index');
-    const config = require('../src/index');
+describe('features', function () {
+  it('load yaml config files by default', function (done) {
+    decache('../src/index')
+    const config = require('../src/index')
     config.load(`${__dirname}/features/load-yaml-config-files-by-default`, (err) => {
-      expect(err).to.be.null;
+      expect(err).to.be.null
       expect(config.store).to.deep.equal({
         conf1: {
           str: 'a string',
@@ -18,20 +19,20 @@ describe('features', function() {
           arr: ['e1', 'e2'],
           flt: 15.235
         }
-      });
-      done();
-    });
-  });
+      })
+      done()
+    })
+  })
 
-  it('load json config files', function(done) {
-    decache('../src/index');
-    const config = require('../src/index');
+  it('load json config files', function (done) {
+    decache('../src/index')
+    const config = require('../src/index')
     const opts = {
-      pattern: /^.*\.json$/,
-      parser: config.parsers.json
-    };
+      filePattern: /^.*\.json$/,
+      fileParser: config.parsers.json
+    }
     config.load(`${__dirname}/features/load-json-config-files`, opts, (err) => {
-      expect(err).to.be.null;
+      expect(err).to.be.null
       expect(config.store).to.deep.equal({
         conf1: {
           str: 'a string',
@@ -41,16 +42,16 @@ describe('features', function() {
           arr: ['e1', 'e2'],
           flt: 15.235
         }
-      });
-      done();
-    });
-  });
+      })
+      done()
+    })
+  })
 
-  it('load recursively config files', function(done) {
-    decache('../src/index');
-    const config = require('../src/index');
+  it('load recursively config files', function (done) {
+    decache('../src/index')
+    const config = require('../src/index')
     config.load(`${__dirname}/features/load-recursively-config-files`, (err) => {
-      expect(err).to.be.null;
+      expect(err).to.be.null
       expect(config.store).to.deep.equal({
         conf1: {
           conf11: {
@@ -62,19 +63,19 @@ describe('features', function() {
           arr: ['e1', 'e2'],
           flt: 15.235
         }
-      });
-      done();
-    });
-  });
+      })
+      done()
+    })
+  })
 
-  it('reload config files no effect store reference', function(done) {
-    decache('../src/index');
-    const config  = require('../src/index');
-    const origin  = `${__dirname}/features/reload-config-files-no-effect-store-reference/origin`;
-    const changed = `${__dirname}/features/reload-config-files-no-effect-store-reference/changed`;
-    const store = config.store;
+  it('reload config files no effect store reference', function (done) {
+    decache('../src/index')
+    const config = require('../src/index')
+    const origin = `${__dirname}/features/reload-config-files-no-effect-store-reference/origin`
+    const changed = `${__dirname}/features/reload-config-files-no-effect-store-reference/changed`
+    const store = config.store
     config.load(origin, (err) => {
-      expect(err).to.be.null;
+      expect(err).to.be.null
       expect(store).to.deep.equal({
         conf1: {
           str: 'a string',
@@ -84,27 +85,26 @@ describe('features', function() {
           arr: ['e1', 'e2'],
           flt: 15.235
         }
-      });
+      })
 
       config.load(changed, (err) => {
-        expect(err).to.be.null;
+        expect(err).to.be.null
         expect(store).to.deep.equal({
           conf1: {
             arr: ['e1', 'e2'],
             num: 15
           }
-        });
-        done();
-      });
-    });
+        })
+        done()
+      })
+    })
+  })
 
-  });
-
-  it('process config paths', function(done) {
-    decache('../src/index');
-    const config = require('../src/index');
+  it('process config paths', function (done) {
+    decache('../src/index')
+    const config = require('../src/index')
     config.load(`${__dirname}/features/process-config-paths`, (err) => {
-      expect(err).to.be.null;
+      expect(err).to.be.null
       expect(config.store).to.deep.equal({
         pathWithDashes: {
           conf1: {
@@ -118,9 +118,17 @@ describe('features', function() {
             flt: 15.235
           }
         }
-      });
-      done();
-    });
-  });
+      })
+      done()
+    })
+  })
 
-});
+  it('catch parser errors', function (done) {
+    decache('../src/index')
+    const config = require('../src/index')
+    config.load(`${__dirname}/features/catch-parser-errors`, (err) => {
+      expect(err).to.be.instanceof(config.ParserError)
+      done()
+    })
+  })
+})

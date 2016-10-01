@@ -4,7 +4,7 @@
   "description": "A config loader is designed to reload on the fly (hot-reload)",
   "main": "src/index.js",
   "scripts": {
-    "test": "mocha --recursive tests"
+    "test": "mocha tests"
   },
   "repository": {
     "type": "git",
