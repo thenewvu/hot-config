@@ -28,8 +28,8 @@ describe('features', function () {
     decache('../src/index')
     const config = require('../src/index')
     const opts = {
-      filePattern: /^.*\.json$/,
-      fileParser: config.parsers.json
+      filePattern: config.filePatterns.json,
+      fileParser: config.fileParsers.json
     }
     config.load(`${__dirname}/features/load-json-config-files`, opts, (err) => {
       expect(err).to.be.null

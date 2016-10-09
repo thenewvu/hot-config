@@ -75,8 +75,14 @@ function parseJSON (file, encoding, done) {
   async.waterfall([read, parse], done)
 }
 
-// built-in parsers
-const parsers = {
+// built-in file patterns
+const filePatterns = {
+  yaml: /^.*\.(yaml|yml)$/,
+  json: /^.*\.(json)$/
+}
+
+// built-in file parsers
+const fileParsers = {
   yaml: parseYAML,
   json: parseJSON
 }
@@ -114,9 +120,9 @@ function load (dir, opts, done) {
 
   // merge opts
   opts = _.defaults({}, opts, {
-    filePattern: /^.*\.(yaml|yml)$/,
+    filePattern: filePatterns.yaml,
     fileEncoding: 'utf8',
-    fileParser: parsers.yaml,
+    fileParser: fileParsers.yaml,
     pathNormalizer: _.camelCase,
     defaultProfile: 'default',
     profile: process.env.NODE_ENV,
@@ -183,4 +189,4 @@ function load (dir, opts, done) {
   async.waterfall([findFiles, parseFiles, mergeProfile, updateStore], done)
 }
 
-module.exports = {ParserError, parsers, store, clear, load}
+module.exports = {ParserError, filePatterns, fileParsers, store, clear, load}
