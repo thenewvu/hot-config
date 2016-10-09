@@ -106,9 +106,13 @@ Load config files recursively in a directory.
 
 The config store.
 
-### config.parsers
+### config.filePatterns
 
-Built-in parsers. Currently, there're 2 built-in parsers, `yaml` and `json`.
+Built-in file patterns, `yaml` and `json`.
+
+### config.fileParsers
+
+Built-in file parsers, `yaml` and `json`.
 
 ### config.ParserError
 
@@ -156,8 +160,8 @@ If you prefer JSON, you need to do some extra works:
 const config = require('hot-config');
 
 const opts = {
-  filePattern: /^.*\.json$/,
-  fileParser: config.parsers.json
+  filePattern: config.filePatterns.json,
+  fileParser: config.fileParsers.json
 }
 
 config.load('configs', opts, (err) => {
