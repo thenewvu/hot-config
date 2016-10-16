@@ -1,20 +1,15 @@
 # HOT-CONFIG
 
-A config loader is designed to be able to hot-reload.
+A node.js config loader is designed to be able to hot-reload.
 
 ## FEATURES
 
-* Load recursively config files that matches a given regexp.
+* Load recursively config files that matches a given pattern.
 * Built-in asynchronous YAML and JSON parsers.
 * Support environment-specific (profile-specific) configs.
-* Able to hot-reload.
+* Hot-reloadable.
 
 ## USAGE
-
-By default, `hot-config` load recursively any YAML files that matches `*.yaml` or `*.yml` in the
-config directory. At runtime, after loaded configs, to access config values, we use config paths which are dot paths that solved from config file paths, all the directory names and file names will be converted to camel case. The default environment (profile) is `default`, the loaded environment (profile) at runtime is `process.env.NODE_ENV` by default or you can specify it by passing `opts.profile` to `load()`.
-
-Here is a simple sample:
 
 ```yaml
 # ./configs/generic.yaml
@@ -84,24 +79,6 @@ module.exports = {start};
 
 ## APIs
 
-### config.load(dir, opts, done)
-
-Load config files recursively in a directory.
-
-```javascript
-/** 
- * Load configs from a dir.
- * @param {String} dir - The dir path.
- * @param {Object} [opts] - Optional options.
- * @param {RegExp} [opts.filePattern] - Config file pattern. Default: /^.*\.(yaml|yml)$/
- * @param {Function} [opts.fileParser] - Config file parser. Default: Built-in YAML parser.
- * @param {Function} [opts.pathNormalizer] - Config path normalizer. Default: lodash.camelCase
- * @param {String} [opts.defaultProfile] - Default profile name. Default: 'default'
- * @param {String} [opts.profile] - Loaed profile name. Default: process.env.NODE_ENV
- * @param {Function} done - The callback.
- */
-```
-
 ### config.store
 
 The config store.
@@ -118,20 +95,31 @@ Built-in file parsers, `yaml` and `json`.
 
 A Error-based class provides information of a parser error.
 
+### config.load(dir, opts, done)
+
+Load config files recursively in a directory.
+
 ```javascript
-class ParserError extends Error {
-  constructor (error, file) {
-    super(`${error.toString()} in "${file}"`)
-  }
-}
+/**
+ * Load configs in a directory.
+ * @param {String} dir - The directory path.
+ * @param {Object} [opts] - Optional options.
+ * @param {RegExp} [opts.filePattern] - Config file pattern. Default: Built-in YAML file pattern.
+ * @param {Function} [opts.fileParser] - Config file parser. Default: Built-in YAML parser.
+ * @param {Function} [opts.pathNormalizer] - Config path normalizer. Default: lodash.camelCase
+ * @param {String} [opts.defaultProfile] - Default profile name. Default: 'default'
+ * @param {String} [opts.profile] - Loaded profile name. Default: process.env.NODE_ENV
+ * @param {Boolean} [opts.dryRun] - Load for testing only, don't update the store. Default: false
+ * @param {Function} done - The callback.
+ */
+function load (dir, opts, done) {}
 ```
 
 ### config.clear()
 
 Clear the config store.
 
-
-## ABLE TO HOT-RELOAD
+## HOT-RELOADABLE
 
 The key of hot-reloading is the only config store instance.
 
@@ -165,5 +153,21 @@ const opts = {
 }
 
 config.load('configs', opts, (err) => {
+})
+```
+
+### DRY RUN
+
+To load configs for testing, you can use the loading opts `dryRun`.
+
+```javascript
+const config = require('hot-config');
+
+const opts = {
+  dryRun: true
+}
+
+config.load('configs', opts, (err, testStore) => {
+  // `testStore` has new configs, the `store` has no change!
 })
 ```
