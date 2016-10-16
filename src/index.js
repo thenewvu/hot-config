@@ -1,21 +1,25 @@
 'use strict'
 
+const util = require('util')
 const fs = require('fs')
 const path = require('path')
-const util = require('util')
 const _ = require('lodash')
 const find = require('find')
 const async = require('neo-async')
 const yaml = require('js-yaml')
 const debug = require('debug')
 
-// create a logging logger
-const log = debug('hot-config:log')
-log.log = console.log.bind(console)
+const log = {
+  info: debug('hot-config:info'),
+  warning: debug('hot-config:warning'),
+  verbose: debug('hot-config:verbose'),
+  error: debug('hot-config:error')
+}
 
-// create a warning logger
-const warn = debug('hot-config:warning')
-warn.log = console.warn.bind(console)
+log.info.log = console.info.bind(console)
+log.verbose.log = console.info.bind(console)
+log.warning.log = console.warn.bind(console)
+log.error.log = console.error.bind(console)
 
 class ParserError extends Error {
   constructor (error, file) {
@@ -40,7 +44,8 @@ function parseYAML (file, encoding, done) {
       try {
         done(null, yaml.load(data))
       } catch (err) {
-        warn(`Failed to parse "%s", %j`, file, err)
+        log.error(`Failed to parse %j due to %j`,
+          file, util.inspect(err, {depth: null}))
         done(new ParserError(err, file))
       }
     })
@@ -66,7 +71,8 @@ function parseJSON (file, encoding, done) {
       try {
         done(null, JSON.parse(data))
       } catch (err) {
-        warn(`Failed to parse "%s", %j`, file, err)
+        log.error(`Failed to parse %j due to %j`,
+          file, util.inspect(err, {depth: null}))
         done(new ParserError(err, file))
       }
     })
@@ -94,99 +100,125 @@ const store = {}
  * Clear config store.
  */
 function clear () {
-  log('Clearing config store, current: %j', store)
-  _.keys(store).forEach((key) => {
+  log.verbose('Current store, %j', store)
+  log.info('Clearing store')
+  _.forEach(_.keys(store), (key) => {
     delete store[key]
   })
 }
 
 /**
- * Load configs from a dir.
- * @param {String} dir - The dir path.
+ * Load configs in a directory.
+ * @param {String} dir - The directory path.
  * @param {Object} [opts] - Optional options.
- * @param {RegExp} [opts.filePattern] - Config file pattern. Default: /^.*\.(yaml|yml)$/
+ * @param {RegExp} [opts.filePattern] - Config file pattern. Default: Built-in YAML file pattern.
  * @param {Function} [opts.fileParser] - Config file parser. Default: Built-in YAML parser.
  * @param {Function} [opts.pathNormalizer] - Config path normalizer. Default: lodash.camelCase
  * @param {String} [opts.defaultProfile] - Default profile name. Default: 'default'
- * @param {String} [opts.profile] - Loaed profile name. Default: process.env.NODE_ENV
+ * @param {String} [opts.profile] - Loaded profile name. Default: process.env.NODE_ENV
+ * @param {Boolean} [opts.dryRun] - Load for testing only, don't update the store. Default: false
  * @param {Function} done - The callback.
  */
 function load (dir, opts, done) {
-  // resolve dir path to an absolute path
-  dir = path.resolve(__dirname, dir)
+  if (_.isFunction(opts)) {
+    done = opts
+    opts = {}
+  }
 
-  // swap (done, opts) if no opts
-  _.isFunction(opts) && ([done, opts] = [opts, {}])
-
-  // merge opts
   opts = _.defaults({}, opts, {
     filePattern: filePatterns.yaml,
     fileEncoding: 'utf8',
     fileParser: fileParsers.yaml,
-    pathNormalizer: _.camelCase,
     defaultProfile: 'default',
     profile: process.env.NODE_ENV,
-    __listdir: find.file
+    dryRun: false
   })
 
-  log('Loading "%s" with opts %j', dir, util.inspect(opts, {depth: 1}))
-
-  const findFiles = (next) => {
-    opts.__listdir(opts.filePattern, dir, (files) => {
-      next(null, files)
-    })
+  if (!path.isAbsolute(dir)) {
+    dir = path.resolve(__dirname, dir)
   }
 
-  const parseFiles = (files, next) => {
-    log('Found config files %j', files)
+  log.info('Loading dir, %j', dir)
+  log.info('Loading with opts, %j', util.inspect(opts, {depth: null}))
 
-    if (_.isEmpty(files)) {
-      warn('Not found any config files')
-      return next(null, [])
-    }
-
-    const parsePath = (file, next) => {
-      file = path.relative(dir, file)
-      file = file.replace(path.extname(file), '').split(path.sep)
-        .filter((n) => !!n).map((n) => opts.pathNormalizer(n)).join('.')
-      next(null, file)
-    }
-
-    const parseFile = (file, next) => {
-      opts.fileParser(file, opts.fileEncoding, next)
-    }
-
-    const parse = (file, next) => async.parallel({
-      path: (next) => parsePath(file, next),
-      value: (next) => parseFile(file, next)
-    }, next)
-
-    async.map(files, parse, next)
-  }
-
-  const mergeProfile = (configs, next) => {
-    const merge = (config) => {
-      const defaultValue = config.value[opts.defaultProfile]
-      const specificValue = config.value[opts.profile]
-      return _.assign(config, {
-        value: _.merge({}, defaultValue, specificValue)
+  const loadFile = (file, next) => {
+    opts.fileParser(file, opts.fileEncoding, (err, value) => {
+      next(err, value && {
+        path: toDotPath(path.relative(dir, file, {
+          pathNormalizer: opts.pathNormalizer
+        })),
+        value
       })
-    }
-
-    next(null, _.map(configs, merge))
-  }
-
-  const updateStore = (configs, next) => {
-    clear()
-    log('Updating new configs: %j', configs)
-    configs.forEach((config) => {
-      _.set(store, config.path, config.value)
     })
-    next(null)
   }
 
-  // execute subtasks
-  async.waterfall([findFiles, parseFiles, mergeProfile, updateStore], done)
+  async.waterfall([
+    (next) => {
+      listDir(dir, opts.filePattern, next)
+    },
+    (files, next) => {
+      log.verbose('Found files, %j', files)
+      async.map(files, loadFile, next)
+    },
+    (configs, next) => {
+      log.verbose('Parsed configs, %j', configs)
+      next(null, _.map(configs, (config) => {
+        const defaultValue = config.value[opts.defaultProfile]
+        const specificValue = config.value[opts.profile]
+        config.value = _.merge({}, defaultValue, specificValue)
+        return config
+      }))
+    },
+    (configs, next) => {
+      log.verbose('Solved configs, %j', configs)
+      if (opts.dryRun) {
+        const testStore = {}
+        _.forEach(configs, (config) => {
+          _.set(testStore, config.path, config.value)
+        })
+        next(null, testStore)
+      } else {
+        clear()
+        _.forEach(configs, (config) => {
+          _.set(store, config.path, config.value)
+        })
+        log.info('Updated store.')
+        log.verbose('Current store, %j', store)
+        next(null, store)
+      }
+    }
+  ], done)
+}
+
+/**
+ * List recursively files that matches a given pattern in a directory.
+ * @param {String} dir - The directory path.
+ * @param {Regexp} filePattern - The file pattern.
+ * @param {Function} done - The callback.
+ */
+function listDir (dir, filePattern, done) {
+  find.file(filePattern, dir, (files) => {
+    done(null, files)
+  })
+}
+
+/**
+ * Convert a file path to a dot path.
+ * @param {String} file - The file path.
+ * @returns {String} The dot path.
+ */
+function toDotPath (filepath, opts) {
+  opts = _.defaults({}, opts, {
+    pathNormalizer: _.camelCase
+  })
+
+  const ext = path.extname(filepath)
+
+  return filepath.replace(ext, '')
+    .split(path.sep)
+    .filter((n) => !!n)
+    .map((n) => opts.pathNormalizer(n))
+    .join('.')
 }
 
 module.exports = {ParserError, filePatterns, fileParsers, store, clear, load}
