@@ -131,4 +131,46 @@ describe('features', function () {
       done()
     })
   })
+
+  it('dry run', function (done) {
+    decache('../src/index')
+    const config = require('../src/index')
+    const origin = `${__dirname}/features/reload-config-files-no-effect-store-reference/origin`
+    const changed = `${__dirname}/features/reload-config-files-no-effect-store-reference/changed`
+    const store = config.store
+    config.load(origin, (err) => {
+      expect(err).to.be.null
+      expect(store).to.deep.equal({
+        conf1: {
+          str: 'a string',
+          num: 12
+        },
+        conf2: {
+          arr: ['e1', 'e2'],
+          flt: 15.235
+        }
+      })
+
+      config.load(changed, {dryRun: true}, (err, testStore) => {
+        expect(err).to.be.null
+        expect(store).to.deep.equal({
+          conf1: {
+            str: 'a string',
+            num: 12
+          },
+          conf2: {
+            arr: ['e1', 'e2'],
+            flt: 15.235
+          }
+        })
+        expect(testStore).to.deep.equal({
+          conf1: {
+            arr: ['e1', 'e2'],
+            num: 15
+          }
+        })
+        done()
+      })
+    })
+  })
 })
