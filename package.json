@@ -28,7 +28,7 @@
     "debug": "^2.2.0",
     "find": "^0.2.7",
     "js-yaml": "^3.6.1",
-    "lodash": "^4.16.2",
+    "lodash": "^4.17.3",
     "neo-async": "^2.0.1"
   },
   "devDependencies": {
